@@ -21,9 +21,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { supabase } from '@/lib/supabaseClient';
-
 
 interface ChatMessage {
   sender: 'advisor' | 'ai';
@@ -45,110 +45,132 @@ const AdvisorLM: React.FC = () => {
   const [contacts, setContacts] = useState<any[]>([]);
   const [showContactDialog, setShowContactDialog] = useState(false);
 
-
   const token = localStorage.getItem('access_token');
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
   const loadChats = async () => {
-    const res = await fetch(process.env.BACKEND_URL + 'advisor-chats', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    setChats(data);
+    try {
+      const res = await fetch(`${BACKEND_URL}/advisor-chats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to fetch chats');
+      const data = await res.json();
+      setChats(data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const loadMessages = async (chatId: string) => {
     setActiveChatId(chatId);
-    const res = await fetch(process.env.BACKEND_URL + '/advisor-chats/${chatId}', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    if (Array.isArray(data)) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/advisor-chats/${chatId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to fetch messages');
+      const data = await res.json();
       const normalized: ChatMessage[] = data.map((msg: any) => ({
         sender: msg.role === 'user' ? 'advisor' : 'ai',
         text: msg.content,
         timestamp: msg.timestamp,
       }));
       setMessages(normalized);
-    } else {
+    } catch (err) {
+      console.error(err);
       setMessages([]);
     }
   };
 
   const createChat = async () => {
-    const res = await fetch(process.env.BACKEND_URL + '/advisor-chats', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({}),
-    });
-    const newChat = await res.json();
-    if (newChat?.id) {
-      await loadChats();
-      await loadMessages(newChat.id);
+    try {
+      const res = await fetch(`${BACKEND_URL}/advisor-chats`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error('Failed to create chat');
+      const newChat = await res.json();
+      if (newChat?.id) {
+        await loadChats();
+        await loadMessages(newChat.id);
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
   const sendContactMessage = async (contact: any) => {
     if (!activeChatId) return;
-
-    await fetch(process.env.BACKEND_URL + '/advisor-chats/${activeChatId}', {
+    try {
+      await fetch(`${BACKEND_URL}/advisor-chats/${activeChatId}`, {
         method: 'POST',
         headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-        prompt: 'Here is a contact detail for the advisor.',
-        contact: contact,
+          prompt: 'Here is a contact detail for the advisor.',
+          contact,
         }),
-    });
-
-    setShowContactDialog(false);
-    loadMessages(activeChatId);
-    };
+      });
+      setShowContactDialog(false);
+      loadMessages(activeChatId);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const sendMessage = async () => {
-    const isFirstMessage = messages.length === 0;
-
     if (!input.trim() || !activeChatId) return;
-    const res = await fetch(process.env.BACKEND_URL + '/advisor-chats/${activeChatId}', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ prompt: input }),
-    });
-    const data = await res.json();
+    try {
+      const res = await fetch(`${BACKEND_URL}/advisor-chats/${activeChatId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ prompt: input }),
+      });
 
-    const newMessages: ChatMessage[] = [
-      {
-        sender: 'advisor',
-        text: input,
-        timestamp: new Date().toISOString(),
-      },
-      {
-        sender: 'ai',
-        text: data.content,
-        timestamp: data.timestamp,
-      },
-    ];
+      if (!res.ok) throw new Error('Failed to send message');
+      const data = await res.json();
 
-    setMessages((prev) => [...prev, ...newMessages]);
-    setInput('');
+      const newMessages: ChatMessage[] = [
+        {
+          sender: 'advisor',
+          text: input,
+          timestamp: new Date().toISOString(),
+        },
+        {
+          sender: 'ai',
+          text: data.content,
+          timestamp: data.timestamp,
+        },
+      ];
+
+      setMessages((prev) => [...prev, ...newMessages]);
+      setInput('');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const fetchContacts = async () => {
     const { data: user } = await supabase.auth.getUser();
     const userId = user?.user?.id;
     if (!userId) return;
-    const { data, error } = await supabase.from('contacts').select('*').eq('user_id', userId);
+
+    const { data, error } = await supabase
+      .from('contacts')
+      .select('*')
+      .eq('user_id', userId);
     if (!error && data) {
-        setContacts(data);
+      setContacts(data);
     }
-    };
+  };
 
   useEffect(() => {
     loadChats();
@@ -173,53 +195,62 @@ const AdvisorLM: React.FC = () => {
                   </Button>
                   {chats.map((chat) => (
                     <div key={chat.id} className="flex items-center space-x-2">
-                        <Button
+                      <Button
                         variant={activeChatId === chat.id ? 'default' : 'outline'}
                         className="w-full justify-start overflow-hidden text-ellipsis whitespace-nowrap"
                         onClick={() => loadMessages(chat.id)}
-                        title={chat.title || `Chat — ${new Date(chat.created_at).toLocaleDateString('tr-TR')}`}
-                        >
-                        {chat.title?.trim()
+                        title={
+                          chat.title?.trim()
                             ? chat.title
-                            : `Chat — ${new Date(chat.created_at).toLocaleDateString('tr-TR')}`}
-                        </Button>
+                            : `Chat — ${new Date(chat.created_at).toLocaleDateString('tr-TR')}`
+                        }
+                      >
+                        {chat.title?.trim()
+                          ? chat.title
+                          : `Chat — ${new Date(chat.created_at).toLocaleDateString('tr-TR')}`}
+                      </Button>
 
-                        <AlertDialog>
+                      <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-600 hover:text-red-700"
+                          >
                             <Trash2 className="h-4 w-4" />
-                            </Button>
+                          </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
-                            <AlertDialogHeader>
+                          <AlertDialogHeader>
                             <AlertDialogTitle>Delete Chat</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Are you sure you want to delete “{chat.title || 'this chat'}”? This cannot be undone.
+                              Are you sure you want to delete “
+                              {chat.title || 'this chat'}”? This cannot be undone.
                             </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                                className="bg-red-600 hover:bg-red-700 text-white"
-                                onClick={async () => {
-                                await fetch(process.env.BACKEND_URL + '/advisor-chats/${chat.id}', {
-                                    method: 'DELETE',
-                                    headers: { Authorization: `Bearer ${token}` },
+                              className="bg-red-600 hover:bg-red-700 text-white"
+                              onClick={async () => {
+                                await fetch(`${BACKEND_URL}/advisor-chats/${chat.id}`, {
+                                  method: 'DELETE',
+                                  headers: { Authorization: `Bearer ${token}` },
                                 });
                                 await loadChats();
                                 if (activeChatId === chat.id) {
-                                    setActiveChatId(null);
-                                    setMessages([]);
+                                  setActiveChatId(null);
+                                  setMessages([]);
                                 }
-                                }}
+                              }}
                             >
-                                Delete
+                              Delete
                             </AlertDialogAction>
-                            </AlertDialogFooter>
+                          </AlertDialogFooter>
                         </AlertDialogContent>
-                        </AlertDialog>
+                      </AlertDialog>
                     </div>
-                    ))}
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -261,35 +292,39 @@ const AdvisorLM: React.FC = () => {
                   onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                 />
                 <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setShowContactDialog(true)}
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowContactDialog(true)}
                 >
-                <Plus size={16} />
+                  <Plus size={16} />
                 </Button>
                 <Button onClick={sendMessage} disabled={!input.trim()}>
                   <Send size={16} />
                 </Button>
               </div>
             </Card>
+
             <Dialog open={showContactDialog} onOpenChange={setShowContactDialog}>
-            <DialogContent className="max-w-lg">
+              <DialogContent className="max-w-lg">
                 <DialogHeader>
-                <DialogTitle>Select Contact to Add</DialogTitle>
+                  <DialogTitle>Select Contact to Add</DialogTitle>
+                  <DialogDescription>Pick a contact to share in this chat.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                {contacts.map((c) => (
+                  {contacts.map((c) => (
                     <ContactCard
-                    key={c.id}
-                    className="p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-                    onClick={() => sendContactMessage(c)}
+                      key={c.id}
+                      className="p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                      onClick={() => sendContactMessage(c)}
                     >
-                    <div className="font-semibold">{c.name}</div>
-                    <div className="text-sm text-muted-foreground">{c.email} • {c.phone}</div>
+                      <div className="font-semibold">{c.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {c.email} • {c.phone}
+                      </div>
                     </ContactCard>
-                ))}
+                  ))}
                 </div>
-            </DialogContent>
+              </DialogContent>
             </Dialog>
           </div>
         </div>

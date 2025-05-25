@@ -21,7 +21,8 @@ const HowItWorksSection: React.FC = () => {
             Seamless Integration in Five Steps
           </p>
         </div>
-        <div className="grid md:grid-cols-5 gap-6 mt-12">
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mt-12">
           {/* Step 1 */}
           <Card className="bg-[#F2FCE2] dark:bg-gray-700 border-none shadow-md hover:shadow-lg transition-shadow duration-300">
             <CardContent className="pt-6">
@@ -41,6 +42,7 @@ const HowItWorksSection: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+
           {/* Step 2 */}
           <Card className="bg-[#FEF7CD] dark:bg-gray-700 border-none shadow-md hover:shadow-lg transition-shadow duration-300">
             <CardContent className="pt-6">
@@ -60,6 +62,7 @@ const HowItWorksSection: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+
           {/* Step 3 */}
           <Card className="bg-[#D3E4FD] dark:bg-gray-700 border-none shadow-md hover:shadow-lg transition-shadow duration-300">
             <CardContent className="pt-6">
@@ -79,6 +82,7 @@ const HowItWorksSection: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+
           {/* Step 4 */}
           <Card className="bg-[#FDE1D3] dark:bg-gray-700 border-none shadow-md hover:shadow-lg transition-shadow duration-300">
             <CardContent className="pt-6">
@@ -98,6 +102,7 @@ const HowItWorksSection: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+
           {/* Step 5 */}
           <Card className="bg-[#E5DEFF] dark:bg-gray-700 border-none shadow-md hover:shadow-lg transition-shadow duration-300">
             <CardContent className="pt-6">
@@ -112,12 +117,13 @@ const HowItWorksSection: React.FC = () => {
                   Conduct Your Meeting
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  Begin your session on Google Meet, Zoom, or Microsoft Teams with AdvisorAI providing real-time assistance and responses to client inquiries.​
+                  Begin your session on Google Meet, Zoom, or Microsoft Teams with AdvisorAI providing real-time assistance and responses to client inquiries.
                 </p>
               </div>
             </CardContent>
           </Card>
         </div>
+
         <div className="mt-16 text-center">
           <a
             href="#"

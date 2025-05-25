@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabaseClient';
 
 type Props = {
   children: React.ReactNode;
-  allowedPlans: ('lite' | 'pro')[];
+  allowedPlans: ('basic' |'lite' | 'pro')[];
 };
 
 const ProtectedRoute: React.FC<Props> = ({ children, allowedPlans }) => {
@@ -17,7 +17,7 @@ const ProtectedRoute: React.FC<Props> = ({ children, allowedPlans }) => {
         setAuthorized(false);
         return;
       }
-      const plan = user.user_metadata?.plan || 'basic';
+      const plan = user.user_metadata?.plan || '';
       setAuthorized(allowedPlans.includes(plan as any));
     };
 

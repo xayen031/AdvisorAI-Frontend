@@ -8,7 +8,8 @@ const HeroSection: React.FC = () => {
       className="min-h-screen flex flex-col justify-center bg-gradient-to-br from-purple-600 via-blue-600 to-blue-500 text-white relative overflow-hidden"
       id="hero"
     >
-      <div className="container mx-auto px-4 flex flex-col md:flex-row items-center">
+      <div className="container mx-auto px-4 pt-24 pb-16 md:pt-32 md:pb-32 flex flex-col md:flex-row items-center gap-10">
+
         {/* Text Area */}
         <div className="w-full md:w-1/2 space-y-6">
           <h1 className="text-4xl md:text-6xl font-extrabold">
@@ -17,20 +18,22 @@ const HeroSection: React.FC = () => {
           <p className="text-lg md:text-xl leading-relaxed">
             AdvisorAI empowers financial advisors with real-time assistance during client meetings, enhancing trust and professionalism. Our AI-driven platform seamlessly provides suggestions and securely logs conversations into our CRM, ensuring every interaction is impactful.
           </p>
-          <div className="flex space-x-4">
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
             <Link
-                          to="/signup"
-                          className="px-8 py-3 font-medium bg-white text-blue-600 rounded-lg transform transition hover:scale-105 hover:bg-gray-200 duration-300"
-                        >
-                          Get Started
+              to="/signup"
+              className="px-8 py-3 font-medium bg-white text-blue-600 rounded-lg transform transition hover:scale-105 hover:bg-gray-200 duration-300 text-center"
+            >
+              Get Started
             </Link>
             <a 
-            href="#about"
-            className="px-8 py-3 font-medium border-solid text-white-600 rounded-lg border-2 transform transition hover:scale-105 duration-300">
+              href="#about"
+              className="px-8 py-3 font-medium border-solid text-white border-white border-2 rounded-lg transform transition hover:scale-105 duration-300 text-center"
+            >
               Learn More
             </a>
           </div>
         </div>
+
         {/* Visual Area */}
         <div className="w-full md:w-1/2 flex justify-center mt-8 md:mt-0">
           <div className="bg-white dark:bg-gray-700 p-8 rounded-full shadow-2xl">
@@ -38,6 +41,7 @@ const HeroSection: React.FC = () => {
           </div>
         </div>
       </div>
+
       {/* Scroll Down Indicator */}
       <div className="absolute bottom-10 w-full flex justify-center">
         <div className="animate-bounce">

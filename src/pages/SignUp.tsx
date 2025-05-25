@@ -87,7 +87,6 @@ const SignUp: React.FC = () => {
           lastName: values.lastName,
           phone: values.phone,
           plan: '',
-          is_paid: false
         },
       },
     });

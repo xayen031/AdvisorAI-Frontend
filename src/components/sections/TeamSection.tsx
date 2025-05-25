@@ -12,13 +12,14 @@ const TeamSection: React.FC = () => {
             Our skilled experts are passionate about building innovative AI solutions to empower your success.
           </p>
         </div>
+
         <div className="space-y-10">
           {/* Team Member 1 */}
-          <div className="flex flex-col md:flex-row items-center bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg transform transition hover:shadow-2xl hover:scale-105 duration-300">
+          <div className="flex flex-col md:flex-row items-center gap-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg transform transition hover:shadow-2xl hover:scale-105 duration-300">
             <img
               src="/images/alfred.jpeg"
               alt="Team member"
-              className="w-32 h-32 rounded-full object-cover border-4 border-blue-600 mb-4 md:mb-0 md:mr-6"
+              className="w-32 h-32 rounded-full object-cover border-4 border-blue-600"
             />
             <div>
               <h3 className="text-xl font-bold text-gray-800 dark:text-white">
@@ -30,12 +31,13 @@ const TeamSection: React.FC = () => {
               </p>
             </div>
           </div>
+
           {/* Team Member 2 */}
-          <div className="flex flex-col md:flex-row items-center bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg transform transition hover:shadow-2xl hover:scale-105 duration-300">
+          <div className="flex flex-col md:flex-row items-center gap-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg transform transition hover:shadow-2xl hover:scale-105 duration-300">
             <img
               src="/images/emre.jpeg"
               alt="Team member"
-              className="w-32 h-32 rounded-full object-cover border-4 border-blue-600 mb-4 md:mb-0 md:mr-6"
+              className="w-32 h-32 rounded-full object-cover border-4 border-blue-600"
             />
             <div>
               <h3 className="text-xl font-bold text-gray-800 dark:text-white">
@@ -47,12 +49,13 @@ const TeamSection: React.FC = () => {
               </p>
             </div>
           </div>
+
           {/* Team Member 3 */}
-          <div className="flex flex-col md:flex-row items-center bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg transform transition hover:shadow-2xl hover:scale-105 duration-300">
+          <div className="flex flex-col md:flex-row items-center gap-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg transform transition hover:shadow-2xl hover:scale-105 duration-300">
             <img
               src="/images/usman.jpeg"
               alt="Team member"
-              className="w-32 h-32 rounded-full object-cover border-4 border-blue-600 mb-4 md:mb-0 md:mr-6"
+              className="w-32 h-32 rounded-full object-cover border-4 border-blue-600"
             />
             <div>
               <h3 className="text-xl font-bold text-gray-800 dark:text-white">

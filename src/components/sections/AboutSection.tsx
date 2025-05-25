@@ -16,7 +16,7 @@ const AboutSection: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Card 1 */}
           <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg transform transition hover:scale-105 duration-300">
             <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-6 mx-auto">
@@ -29,6 +29,7 @@ const AboutSection: React.FC = () => {
               A passionate group of AI scientists and experts dedicated to transforming challenges into opportunities.
             </p>
           </div>
+
           {/* Card 2 */}
           <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg transform transition hover:scale-105 duration-300">
             <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-6 mx-auto">
@@ -38,9 +39,10 @@ const AboutSection: React.FC = () => {
               Our Mission
             </h3>
             <p className="text-gray-600 dark:text-gray-300 text-center">
-              Empower individuals and organizations with AI tools that simplify complex decision-making.
+              We are dedicated to help professionals leverage AI with tailored solutions to increase productivity.
             </p>
           </div>
+
           {/* Card 3 */}
           <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg transform transition hover:scale-105 duration-300">
             <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-6 mx-auto">

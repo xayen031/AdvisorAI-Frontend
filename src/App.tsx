@@ -73,41 +73,41 @@ const App = () => {
             <Route
               path="/crm/contacts"
               element={
-                //<ProtectedRoute allowedPlans={['lite', 'pro']}>
+                <ProtectedRoute allowedPlans={['basic','lite', 'pro']}>
                   <AuthGuard>
                     <Contacts />
                   </AuthGuard>
-                //</ProtectedRoute>
+                </ProtectedRoute>
               }
             />
             <Route
               path="/crm/calendar"
               element={
-                //<ProtectedRoute allowedPlans={['lite', 'pro']}>
+                <ProtectedRoute allowedPlans={['basic','lite', 'pro']}>
                   <AuthGuard>
                     <Calendar />
                   </AuthGuard>
-                //</ProtectedRoute>
+                </ProtectedRoute>
               }
             />
             <Route
               path="/crm/settings"
               element={
-                //<ProtectedRoute allowedPlans={['lite', 'pro']}>
+                <ProtectedRoute allowedPlans={['basic','lite', 'pro']}>
                   <AuthGuard>
                     <Settings />
                   </AuthGuard>
-                //</ProtectedRoute>
+                </ProtectedRoute>
               }
             />
             <Route
               path="/meeting"
               element={
-                //<ProtectedRoute allowedPlans={['lite', 'pro']}>
+                <ProtectedRoute allowedPlans={['lite', 'pro']}>
                   <AuthGuard>
                     <MeetingPage />
                   </AuthGuard>
-                //</ProtectedRoute>
+                </ProtectedRoute>
               }
             />
             <Route
@@ -129,31 +129,31 @@ const App = () => {
             <Route
               path="/crm"
               element={
-                //<ProtectedRoute allowedPlans={['lite', 'pro']}>
+                <ProtectedRoute allowedPlans={['basic','lite', 'pro']}>
                   <AuthGuard>
                     <CRM />
                   </AuthGuard>
-                //</ProtectedRoute>
+                </ProtectedRoute>
               }
             />
             <Route
               path="/crm/meetings"
               element={
-                //<ProtectedRoute allowedPlans={['lite', 'pro']}>
+                <ProtectedRoute allowedPlans={['lite', 'pro']}>
                   <AuthGuard>
                     <MeetingsPage />
                   </AuthGuard>
-                //</ProtectedRoute>
+                </ProtectedRoute>
               }
             />
             <Route
               path="/crm/advisorlm"
               element={
-                //<ProtectedRoute allowedPlans={['pro']}>
+                <ProtectedRoute allowedPlans={['pro']}>
                   <AuthGuard>
                     <AdvisorLM />
                   </AuthGuard>
-                //</ProtectedRoute>
+                </ProtectedRoute>
               }
             />
             <Route

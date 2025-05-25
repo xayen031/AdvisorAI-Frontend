@@ -183,6 +183,8 @@ const ContactDetails = ({ contact, isExpanded, onToggle, onSave, onDelete }: Con
   };
 
   const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [meetingTitle, setMeetingTitle] = useState('');
 
   const addFamilyMember = (type: 'children' | 'parents' | 'siblings') => {
     setEditedContact(prev => {
@@ -213,10 +215,30 @@ const ContactDetails = ({ contact, isExpanded, onToggle, onSave, onDelete }: Con
   };
 
   const handleSave = () => {
-    // Combine firstName and lastName for the name field
+    // Ensure date fields are Date objects
+    const parseDate = (val: string | Date | undefined) => {
+      if (!val) return undefined;
+      if (val instanceof Date) return val;
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? undefined : d;
+    };
+
     const updatedContact = {
       ...editedContact,
-      name: `${editedContact.personalDetails.firstName} ${editedContact.personalDetails.lastName}`.trim()
+      name: `${editedContact.personalDetails.firstName} ${editedContact.personalDetails.lastName}`.trim(),
+      personalDetails: {
+        ...editedContact.personalDetails,
+        dateOfBirth: parseDate(editedContact.personalDetails?.dateOfBirth),
+      },
+      compliance: {
+        ...editedContact.compliance,
+        lastReviewDate: parseDate(editedContact.compliance?.lastReviewDate),
+      },
+      letterOfAuthority: {
+        ...editedContact.letterOfAuthority,
+        dateIssued: parseDate(editedContact.letterOfAuthority?.dateIssued),
+        expiryDate: parseDate(editedContact.letterOfAuthority?.expiryDate),
+      }
     };
     onSave(updatedContact);
   };
@@ -225,7 +247,7 @@ const ContactDetails = ({ contact, isExpanded, onToggle, onSave, onDelete }: Con
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
       <CollapsibleContent className="p-4 space-y-4 bg-gray-50 dark:bg-indigo-900/20 rounded-lg mt-2">
         <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-8 gap-1">
+          <TabsList className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-9 gap-1">
             <TabsTrigger value="personal" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               <span className="hidden md:inline">Personal</span>
@@ -249,6 +271,10 @@ const ContactDetails = ({ contact, isExpanded, onToggle, onSave, onDelete }: Con
             <TabsTrigger value="past" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
               <span className="hidden md:inline">Past</span>
+            </TabsTrigger>
+            <TabsTrigger value="future" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              <span className="hidden md:inline">Future</span>
             </TabsTrigger>
             <TabsTrigger value="risk-profiler" className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
@@ -280,7 +306,10 @@ const ContactDetails = ({ contact, isExpanded, onToggle, onSave, onDelete }: Con
                 <Label>Date of Birth</Label>
                 <Input
                   type="date"
-                  value={editedContact.personalDetails?.dateOfBirth || ''}
+                  value={editedContact.personalDetails?.dateOfBirth 
+                    ? new Date(editedContact.personalDetails?.dateOfBirth).toISOString().split('T')[0] 
+                    : ''
+                  }
                   onChange={(e) => handleInputChange('personalDetails', 'dateOfBirth', e.target.value)}
                 />
               </div>
@@ -335,7 +364,10 @@ const ContactDetails = ({ contact, isExpanded, onToggle, onSave, onDelete }: Con
                 <Label>Last Review Date</Label>
                 <Input
                   type="date"
-                  value={editedContact.compliance?.lastReviewDate || ''}
+                  value={editedContact.compliance?.lastReviewDate 
+                    ? new Date(editedContact.compliance.lastReviewDate).toISOString().split('T')[0] 
+                    : ''
+                  }
                   onChange={(e) => handleInputChange('compliance', 'lastReviewDate', e.target.value)}
                 />
               </div>
@@ -638,6 +670,12 @@ const ContactDetails = ({ contact, isExpanded, onToggle, onSave, onDelete }: Con
             </div>
           </TabsContent>
 
+          <TabsContent value="future" className="mt-4">
+            <div className="text-gray-500 dark:text-gray-400 text-center py-4">
+              Future interactions will be displayed here
+            </div>
+          </TabsContent>
+
           <TabsContent value="risk-profiler" className="mt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -731,7 +769,10 @@ const ContactDetails = ({ contact, isExpanded, onToggle, onSave, onDelete }: Con
                 <Label>Date Issued</Label>
                 <Input
                   type="date"
-                  value={editedContact.letterOfAuthority?.dateIssued}
+                  value={editedContact.letterOfAuthority?.dateIssued 
+                    ? new Date(editedContact.letterOfAuthority.dateIssued).toISOString().split('T')[0] 
+                    : ''
+                  }
                   onChange={(e) => handleInputChange('letterOfAuthority', 'dateIssued', e.target.value)}
                 />
               </div>
@@ -739,7 +780,10 @@ const ContactDetails = ({ contact, isExpanded, onToggle, onSave, onDelete }: Con
                 <Label>Expiry Date</Label>
                 <Input
                   type="date"
-                  value={editedContact.letterOfAuthority?.expiryDate}
+                  value={editedContact.letterOfAuthority?.expiryDate 
+                    ? new Date(editedContact.letterOfAuthority.expiryDate).toISOString().split('T')[0] 
+                    : ''
+                  }
                   onChange={(e) => handleInputChange('letterOfAuthority', 'expiryDate', e.target.value)}
                 />
               </div>
@@ -752,45 +796,7 @@ const ContactDetails = ({ contact, isExpanded, onToggle, onSave, onDelete }: Con
           <Button
             variant="outline"
             size="sm"
-            onClick={async () => {
-              const sessionId = `contact-${contact.id}-${Date.now()}`
-
-              try {
-                const { data: user } = await supabase.auth.getUser()
-                const userId = user?.user?.id
-
-                if (!userId) {
-                  alert("User not authenticated.")
-                  return
-                }
-
-                const res = await fetch(import.meta.env.VITE_BACKEND_URL + '/meetings/start?userId=${userId}&clientId=${contact.id}&sessionId=${sessionId}', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ title: `Meeting with ${contact.name}` })
-                })
-
-                if (!res.ok) {
-                  const err = await res.json()
-                  console.error(err)
-                  alert('Failed to create meeting.')
-                  return
-                }
-
-                // ✅ Navigate to meeting page after success
-                navigate('/meeting', {
-                  state: {
-                    customerName: contact.name,
-                    advisorName: 'Advisor',
-                    meetingId: sessionId
-                  }
-                })
-
-              } catch (e) {
-                console.error(e)
-                alert('Error creating meeting.')
-              }
-            }}
+            onClick={() => setIsModalOpen(true)}
 
 
             className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
@@ -821,6 +827,67 @@ const ContactDetails = ({ contact, isExpanded, onToggle, onSave, onDelete }: Con
             </Button>
           </div>
         </div>
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-md shadow-lg">
+              <h2 className="text-lg font-semibold mb-4">Enter Meeting Name</h2>
+              <Input
+                type="text"
+                placeholder="e.g. Q2 Planning with John"
+                value={meetingTitle}
+                onChange={(e) => setMeetingTitle(e.target.value)}
+              />
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={async () => {
+                    const sessionId = `contact-${contact.id}-${Date.now()}`
+                    try {
+                      const { data: user } = await supabase.auth.getUser()
+                      const userId = user?.user?.id
+
+                      if (!userId) {
+                        alert("User not authenticated.")
+                        return
+                      }
+
+                      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/meetings/start?userId=${userId}&clientId=${contact.id}&sessionId=${sessionId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title: meetingTitle || `Meeting with ${contact.name}` })
+                      })
+
+                      if (!res.ok) {
+                        const err = await res.json()
+                        console.error(err)
+                        alert('Failed to create meeting.')
+                        return
+                      }
+
+                      setIsModalOpen(false)
+
+                      navigate('/meeting', {
+                        state: {
+                          customerName: contact.name,
+                          advisorName: 'Advisor',
+                          meetingId: sessionId
+                        }
+                      })
+
+                    } catch (e) {
+                      console.error(e)
+                      alert('Error creating meeting.')
+                    }
+                  }}
+                >
+                  Start Meeting
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </CollapsibleContent>
     </Collapsible>
