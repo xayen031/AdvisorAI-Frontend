@@ -73,7 +73,7 @@ const App = () => {
             <Route
               path="/crm/contacts"
               element={
-                <ProtectedRoute allowedPlans={['basic','lite', 'pro']}>
+                <ProtectedRoute >
                   <AuthGuard>
                     <Contacts />
                   </AuthGuard>
@@ -83,7 +83,7 @@ const App = () => {
             <Route
               path="/crm/calendar"
               element={
-                <ProtectedRoute allowedPlans={['basic','lite', 'pro']}>
+                <ProtectedRoute >
                   <AuthGuard>
                     <Calendar />
                   </AuthGuard>
@@ -93,7 +93,7 @@ const App = () => {
             <Route
               path="/crm/settings"
               element={
-                <ProtectedRoute allowedPlans={['basic','lite', 'pro']}>
+                <ProtectedRoute >
                   <AuthGuard>
                     <Settings />
                   </AuthGuard>
@@ -103,7 +103,7 @@ const App = () => {
             <Route
               path="/meeting"
               element={
-                <ProtectedRoute allowedPlans={['lite', 'pro']}>
+                <ProtectedRoute>
                   <AuthGuard>
                     <MeetingPage />
                   </AuthGuard>
@@ -129,7 +129,7 @@ const App = () => {
             <Route
               path="/crm"
               element={
-                <ProtectedRoute allowedPlans={['basic','lite', 'pro']}>
+                <ProtectedRoute >
                   <AuthGuard>
                     <CRM />
                   </AuthGuard>
@@ -139,7 +139,7 @@ const App = () => {
             <Route
               path="/crm/meetings"
               element={
-                <ProtectedRoute allowedPlans={['lite', 'pro']}>
+                <ProtectedRoute>
                   <AuthGuard>
                     <MeetingsPage />
                   </AuthGuard>
@@ -149,7 +149,7 @@ const App = () => {
             <Route
               path="/crm/advisorlm"
               element={
-                <ProtectedRoute allowedPlans={['pro']}>
+                <ProtectedRoute>
                   <AuthGuard>
                     <AdvisorLM />
                   </AuthGuard>

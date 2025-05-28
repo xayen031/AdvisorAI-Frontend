@@ -3,7 +3,9 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { MessageCircle, Send } from 'lucide-react'
+import { Lock , Send } from 'lucide-react'
+import { supabase } from '@/lib/supabaseClient'
+
 
 interface TranscriptItem {
   timestamp: string
@@ -23,6 +25,8 @@ export const MeetingPage: React.FC = () => {
   const meetingId    = state?.meetingId    ?? 'dev-session'
   const advisorName  = state?.advisorName  ?? 'Advisor'
   const customerName = state?.customerName ?? 'Customer'
+
+  const [userPlan, setUserPlan] = useState<string>('basic')
 
   const micStreamRef = useRef<MediaStream|null>(null)
   const spkStreamRef = useRef<MediaStream|null>(null)
@@ -55,11 +59,23 @@ export const MeetingPage: React.FC = () => {
   useEffect(() => {
     aiEl.current?.scrollTo({ top: aiEl.current.scrollHeight })
   }, [aiSuggestions])
+  useEffect(() => {
+    const fetchPlan = async () => {
+      const { data, error } = await supabase.auth.getUser()
+      if (data?.user) {
+        const plan = data.user.user_metadata?.plan || 'basic'
+        setUserPlan(plan)
+      }
+    }
+
+    fetchPlan()
+  }, [])
+
 
   const append = (item: TranscriptItem) =>
     setTranscripts(prev => [...prev, item])
 
-  const openWs = (path: '/mic' | '/speaker'): Promise<WebSocket> =>
+  const openWs = (path: '/mic' | '/speaker' | '/speaker_noai' | '/mic_and_speaker'): Promise<WebSocket> =>
     new Promise(res => {
       const ws = new WebSocket(import.meta.env.VITE_BACKEND_URL + path +
         `?userId=${meetingId}&clientId=${meetingId}&sessionId=${meetingId}`)
@@ -79,7 +95,8 @@ export const MeetingPage: React.FC = () => {
       spkStreamRef.current = new MediaStream(disp.getAudioTracks()) 
       // open transcription websockets
       const wsMic = await openWs('/mic')
-      const wsSpk = await openWs('/speaker')
+      const spkPath = userPlan === 'basic' ? '/speaker_noai' : '/speaker'
+      const wsSpk = await openWs(spkPath as '/speaker' | '/speaker_noai')
       wsMicRef.current = wsMic
       wsSpkRef.current = wsSpk
 
@@ -161,36 +178,41 @@ export const MeetingPage: React.FC = () => {
 }
 
 const endMeeting = async () => {
+  // 1️⃣ Stop tüm audio/WebSocket işlemleri
   stopMeeting()
   setMeetingEnded(true)
   append({ timestamp: new Date().toISOString(), speaker: 'System', text: 'Meeting ended' })
 
+  // 🔁 Transcript özetini oluştur
   try {
-    const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/summarize' +
-      `?userId=${meetingId}&clientId=${meetingId}&sessionId=${meetingId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: transcripts.map(t => ({
-          speaker: t.speaker,
-          text: t.text
-        }))
-      })
-    })
-
+    const response = await fetch(
+      import.meta.env.VITE_BACKEND_URL +
+        '/summarize' +
+        `?userId=${meetingId}&clientId=${meetingId}&sessionId=${meetingId}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: transcripts.map(t => ({
+            speaker: t.speaker,
+            text: t.text
+          }))
+        })
+      }
+    )
     const data = await response.json()
     if (response.ok) {
       append({
         timestamp: new Date().toISOString(),
         speaker: 'System',
-        text: 'Summary successfully created.'
+        text: 'Transcript summary successfully created.'
       })
     } else {
       console.error(data)
       append({
         timestamp: new Date().toISOString(),
         speaker: 'System',
-        text: 'Failed to summarize the meeting.'
+        text: 'Failed to create transcript summary.'
       })
     }
   } catch (err) {
@@ -198,23 +220,90 @@ const endMeeting = async () => {
     append({
       timestamp: new Date().toISOString(),
       speaker: 'System',
-      text: 'Error while sending data for summarization.'
+      text: 'Error while summarizing transcript.'
+    })
+  }
+
+  // 🔁 Insight summary için /meetings/end çağrısı
+  try {
+    // ▶️ Burada localStorage yerine Supabase Auth’tan gerçek UUID alıyoruz
+    const {
+      data: { user },
+      error: userError
+    } = await supabase.auth.getUser()
+    if (userError || !user) {
+      console.error('Kullanıcı kimliği alınamadı:', userError)
+      append({
+        timestamp: new Date().toISOString(),
+        speaker: 'System',
+        text: 'Insight summary generation failed: user ID missing.'
+      })
+      return
+    }
+    const userId = user.id
+
+    const query = `?userId=${userId}&clientId=${meetingId}&sessionId=${meetingId}`
+    const response = await fetch(
+      import.meta.env.VITE_BACKEND_URL + '/meetings/end' + query,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({})
+      }
+    )
+
+    if (response.ok) {
+      append({
+        timestamp: new Date().toISOString(),
+        speaker: 'System',
+        text: 'Insight summary successfully generated.'
+      })
+    } else {
+      const data = await response.json()
+      console.error(data)
+      append({
+        timestamp: new Date().toISOString(),
+        speaker: 'System',
+        text: 'Insight summary generation failed.'
+      })
+    }
+  } catch (err) {
+    console.error(err)
+    append({
+      timestamp: new Date().toISOString(),
+      speaker: 'System',
+      text: 'Error while generating insight summary.'
     })
   }
 }
 
 
+
+
   const sendToAI = (text: string) => {
-    const wsAi = new WebSocket(import.meta.env.VITE_BACKEND_URL + '/mic_and_speaker' +
+    const wsUrl = userPlan === 'basic'
+      ? '/speaker'  // AI yok
+      : '/mic_and_speaker'
+
+    const ws = new WebSocket(import.meta.env.VITE_BACKEND_URL + wsUrl +
       `?userId=${meetingId}&clientId=${meetingId}&sessionId=${meetingId}`)
-    wsAi.onopen = () => {
+
+    ws.onopen = () => {
       setAiSuggestions([])
-      wsAi.send(JSON.stringify({ type: 'text_input', content: text }))
+      if (userPlan !== 'basic') {
+        ws.send(JSON.stringify({ type: 'text_input', content: text }))
+      }
     }
-    wsAi.onmessage = ev => {
-      const msg = JSON.parse(ev.data)
-      if (msg.type === 'openai_assistant_delta') {
-        setAiSuggestions(prev => [...prev, msg.content])
+
+    ws.onmessage = ev => {
+      if (userPlan !== 'basic') {
+        const msg = JSON.parse(ev.data)
+        if (msg.type === 'openai_assistant_delta') {
+          setAiSuggestions(prev => [...prev, msg.content])
+        }
       }
     }
   }
@@ -248,10 +337,13 @@ const endMeeting = async () => {
           <CardHeader className="bg-gray-100 dark:bg-indigo-900/50 border-b p-3">
             <CardTitle className="text-lg">AI Assistant</CardTitle>
           </CardHeader>
-          <CardContent className="p-3 flex flex-col h-full">
+          <CardContent className="p-3 flex flex-col h-full relative">
+            {/* AI cevapları */}
             <div
               ref={aiEl}
-              className="flex-1 overflow-y-auto space-y-2 mb-4"
+              className={`flex-1 overflow-y-auto space-y-2 mb-4 ${
+                userPlan === 'basic' ? 'blur-sm pointer-events-none' : ''
+              }`}
               style={{ maxHeight: '400px' }}
             >
               {aiSuggestions.map((s, i) => (
@@ -262,6 +354,8 @@ const endMeeting = async () => {
                 />
               ))}
             </div>
+
+            {/* Prompt alanı */}
             <div className="flex space-x-2">
               <input
                 type="text"
@@ -278,7 +372,18 @@ const endMeeting = async () => {
                 <Send size={16} />
               </Button>
             </div>
+
+            {/* Kilit Overlay */}
+            {userPlan === 'basic' && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10 rounded">
+                <div className="text-white text-sm flex flex-col items-center">
+                  <Lock className="h-6 w-6 mb-2 text-white" />
+                  <span>AI access is locked in <b>Basic</b> plan</span>
+                </div>
+              </div>
+            )}
           </CardContent>
+
         </Card>
 
         {/* Transcript */}

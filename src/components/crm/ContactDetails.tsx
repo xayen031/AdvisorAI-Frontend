@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Save, Trash2, User, Shield, Wallet, Users, FileText, Clock, AlertCircle, FileWarning, Upload, Plus } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -185,6 +185,44 @@ const ContactDetails = ({ contact, isExpanded, onToggle, onSave, onDelete }: Con
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [meetingTitle, setMeetingTitle] = useState('');
+  const [pastInsights, setPastInsights] = useState<any[]>([]);
+  const [futureInsights, setFutureInsights] = useState<any[]>([]);
+  const [loadingInsights, setLoadingInsights] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchInsights = async () => {
+      setLoadingInsights(true);
+
+      const { data, error } = await supabase
+        .from('insight_summaries')
+        .select('*')
+        .ilike('client_id', `contact-${contact.id}-%`);
+
+      if (error) {
+        console.error('❌ Supabase error:', error);
+        setLoadingInsights(false);
+        return;
+      }
+
+      const parsed = data.map((item) => ({
+        ...item,
+        insight_data: typeof item.insight_data === 'string'
+          ? JSON.parse(item.insight_data)
+          : item.insight_data,
+      }));
+
+      const past = parsed.filter((d) => d.insight_data?.pastSummary);
+      const future = parsed.filter(
+        (d) => d.insight_data?.futurePlan || d.insight_data?.actionItems
+      );
+
+      setPastInsights(past);
+      setFutureInsights(future);
+      setLoadingInsights(false);
+    };
+
+    fetchInsights();
+  }, [contact.id]);
 
   const addFamilyMember = (type: 'children' | 'parents' | 'siblings') => {
     setEditedContact(prev => {
@@ -664,17 +702,48 @@ const ContactDetails = ({ contact, isExpanded, onToggle, onSave, onDelete }: Con
             />
           </TabsContent>
 
-          <TabsContent value="past" className="mt-4">
-            <div className="text-gray-500 dark:text-gray-400 text-center py-4">
-              Past interactions will be displayed here
-            </div>
+          <TabsContent value="past" className="mt-4 space-y-4">
+            {loadingInsights ? (
+              <p className="text-gray-500 dark:text-gray-400 text-center">Loading past insights...</p>
+            ) : pastInsights.length === 0 ? (
+              <p className="text-gray-500 dark:text-gray-400 text-center">No past insights found.</p>
+            ) : (
+              pastInsights.map((item, i) => (
+                <div key={item.id || i} className="bg-white dark:bg-gray-800 p-4 rounded shadow">
+                  <h4 className="font-semibold text-gray-700 dark:text-white">Past Insight #{i + 1}</h4>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">{item.insight_data?.pastSummary}</p>
+                  <div className="text-xs text-gray-400 mt-2">Created: {new Date(item.created_at).toLocaleString()}</div>
+                </div>
+              ))
+            )}
           </TabsContent>
 
-          <TabsContent value="future" className="mt-4">
-            <div className="text-gray-500 dark:text-gray-400 text-center py-4">
-              Future interactions will be displayed here
-            </div>
+
+          <TabsContent value="future" className="mt-4 space-y-4">
+            {loadingInsights ? (
+              <p className="text-gray-500 dark:text-gray-400 text-center">Loading future insights...</p>
+            ) : futureInsights.length === 0 ? (
+              <p className="text-gray-500 dark:text-gray-400 text-center">No future plans available.</p>
+            ) : (
+              futureInsights.map((item, i) => (
+                <div key={item.id || i} className="bg-white dark:bg-gray-800 p-4 rounded shadow">
+                  <h4 className="font-semibold text-gray-700 dark:text-white">Future Plan #{i + 1}</h4>
+                  {item.insight_data?.futurePlan && (
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">{item.insight_data.futurePlan}</p>
+                  )}
+                  {item.insight_data?.actionItems && (
+                    <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-300">
+                      {item.insight_data.actionItems.map((action: string, idx: number) => (
+                        <li key={idx}>{action}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="text-xs text-gray-400 mt-2">Created: {new Date(item.created_at).toLocaleString()}</div>
+                </div>
+              ))
+            )}
           </TabsContent>
+
 
           <TabsContent value="risk-profiler" className="mt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
