@@ -16,7 +16,7 @@ const VideoSection: React.FC = () => {
           <div className="relative w-full max-w-4xl aspect-video rounded-3xl overflow-hidden shadow-2xl">
             <iframe
               className="w-full h-full"
-              src="https://www.youtube.com/embed/example-video-id"
+              src="https://youtu.be/o2Bax--rnd4?si=H__Oar0u4dh_EUx3"
               title="How AdvisorAI Works"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
