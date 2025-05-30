@@ -14,14 +14,16 @@ const VideoSection: React.FC = () => {
         </div>
         <div className="flex justify-center">
           <div className="relative w-full max-w-4xl aspect-video rounded-3xl overflow-hidden shadow-2xl">
-            <iframe
-              className="w-full h-full"
-              src="https://youtu.be/cNg8UrwtWaI?si=719GSwew6xP17MmG"
-              title="How AdvisorAI Works"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            ></iframe>
+            <video
+              className="w-full h-full object-cover"
+              controls
+              autoPlay
+              muted
+              playsInline
+            >
+              <source src="/advisoraidemo.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
           </div>
         </div>
       </div>
