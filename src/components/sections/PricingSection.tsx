@@ -116,9 +116,16 @@ const PricingSection: React.FC = () => {
                 )}
 
                 <div className="mt-auto pt-2">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-400 dark:hover:bg-blue-500 text-white font-bold">
-                    {plan.button}
-                  </Button>
+                  <a
+                    href="/signup"
+                    className="w-full block"
+                  >
+                    <Button
+                      className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-400 dark:hover:bg-blue-500 text-white font-bold"
+                    >
+                      {plan.button}
+                    </Button>
+                  </a>
                 </div>
               </div>
             </div>
