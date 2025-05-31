@@ -116,7 +116,9 @@ const Settings: React.FC = () => {
       setSendingReset(false);
       return;
     }
-    const { error } = await supabase.auth.resetPasswordForEmail(user.email);
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      redirectTo: 'http://localhost:3000/reset-password',
+    });
     setSendingReset(false);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });

@@ -3,26 +3,52 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import CRMHeader from '@/components/crm/CRMHeader';
-import { ArrowLeft } from 'lucide-react'; //
+import { ArrowLeft } from 'lucide-react';
 
 const plans = [
   {
     name: 'Basic',
-    price: 'Free',
-    features: ['1 User', 'Basic Support', 'Limited AI Access'],
-    button: 'Choose Basic',
+    price: '$75/month',
+    value: 'basic',
+    features: [
+      'AI generated meeting summary',
+      'Automated AI meeting admin',
+      'Monthly report generation',
+      'Email support',
+      '✘ Realtime AI assistant',
+      '✘ Custom integrations',
+      '✘ Advanced Analytics',
+    ],
+    button: 'Get Started',
+    recommended: false,
+    enterprise: false,
   },
   {
-    name: 'Lite',
-    price: '$9/month',
-    features: ['Up to 3 Users', 'Priority Support', 'Moderate AI Access'],
-    button: 'Choose Lite',
+    name: 'Professional',
+    price: '$100/month',
+    value: 'pro',
+    features: [
+      'AI generated meeting summary',
+      'Automated AI meeting admin',
+      'Monthly report generation',
+      'Email support',
+      'Realtime AI assistant',
+      'Custom integrations',
+      'Advanced Analytics',
+    ],
+    button: 'Get Started',
+    recommended: true,
+    enterprise: false,
   },
   {
-    name: 'Pro',
-    price: '$19/month',
-    features: ['Unlimited Users', '24/7 Support', 'Full AI Access'],
-    button: 'Choose Pro',
+    name: 'Enterprise',
+    price: 'Custom',
+    value: 'enterprise',
+    features: [
+    ],
+    button: 'Get in touch',
+    recommended: false,
+    enterprise: true,
   },
 ];
 
@@ -32,12 +58,8 @@ const Plans: React.FC = () => {
 
   useEffect(() => {
     const fetchUserPlan = async () => {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
-
-      if (user && user.user_metadata?.plan) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.user_metadata?.plan) {
         setCurrentPlan(user.user_metadata.plan);
       }
     };
@@ -49,49 +71,34 @@ const Plans: React.FC = () => {
     if (plan === currentPlan) return;
 
     if (plan === 'basic') {
-      const { data: { user } } = await supabase.auth.getUser();
-      await supabase.auth.updateUser({
-        data: { plan: 'basic' },
-      });
+      await supabase.auth.updateUser({ data: { plan: 'basic' } });
       navigate('/crm/settings');
       return;
     }
 
-    const {
-      data: { user },
-      error: userError
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      alert("User not found");
+    if (plan === 'enterprise') {
+      // redirect to contact page or open email
+      window.location.href = 'mailto:support@advisorai.io?subject=Enterprise Plan Inquiry';
       return;
     }
 
-    const {
-      data: { session },
-      error: sessionError
-    } = await supabase.auth.getSession();
-
-    if (sessionError || !session) {
-      alert("Session error");
-      return;
-    }
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
 
     const res = await fetch('https://mylukrhthpvxhzadrfqe.supabase.co/functions/v1/create-checkout', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}` // 👈 Add this line
+        'Authorization': `Bearer ${session?.access_token}`,
       },
       body: JSON.stringify({
         plan,
-        user_id: user.id,
-        email: user.email
+        user_id: user?.id,
+        email: user?.email,
       }),
     });
 
     const { url, error } = await res.json();
-
     if (res.ok && url) {
       window.location.href = url;
     } else {
@@ -99,20 +106,18 @@ const Plans: React.FC = () => {
     }
   };
 
-
-
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
       <CRMHeader />
       <div className="relative z-20 px-4 mt-4">
-      <button
-        onClick={() => navigate('/crm/settings')}
-        className="flex items-center text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 transition"
-      >
-        <ArrowLeft className="w-5 h-5 mr-1" />
-        Back to Settings
-      </button>
-    </div>
+        <button
+          onClick={() => navigate('/crm/settings')}
+          className="flex items-center text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 transition"
+        >
+          <ArrowLeft className="w-5 h-5 mr-1" />
+          Back to Settings
+        </button>
+      </div>
       <div className="max-w-6xl mx-auto px-4 py-16">
         <h1 className="text-4xl font-bold text-center mb-4">Choose Your Plan</h1>
         <p className="text-center text-gray-600 dark:text-gray-300 mb-12">
@@ -120,23 +125,28 @@ const Plans: React.FC = () => {
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {plans.map(plan => {
-            const isCurrent = plan.name.toLowerCase() === currentPlan;
+            const isCurrent = plan.value === currentPlan;
             return (
               <div
                 key={plan.name}
-                className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8 flex flex-col items-center text-center"
+                className={`rounded-2xl p-8 shadow-md flex flex-col justify-between text-center border ${
+                  plan.recommended ? 'border-blue-600 ring-2 ring-blue-600' : 'border-gray-200 dark:border-gray-700'
+                } bg-white dark:bg-gray-800`}
               >
-                <h2 className="text-2xl font-semibold mb-2">{plan.name}</h2>
-                <p className="text-xl font-bold mb-4">{plan.price}</p>
-                <ul className="mb-6 space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                  {plan.features.map((feature, i) => (
-                    <li key={i}>✓ {feature}</li>
-                  ))}
-                </ul>
+                <div>
+                  <h2 className="text-2xl font-semibold mb-2">{plan.name}</h2>
+                  <p className="text-xl font-bold mb-4">{plan.price}</p>
+                  <ul className="mb-6 space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                    {plan.features.map((feature, i) => (
+                      <li key={i}>{feature}</li>
+                    ))}
+                  </ul>
+                </div>
                 <Button
-                  onClick={() => handleChoose(plan.name.toLowerCase())}
+                  onClick={() => handleChoose(plan.value)}
                   disabled={isCurrent}
                   variant={isCurrent ? 'outline' : 'default'}
+                  className="w-full mt-auto"
                 >
                   {isCurrent ? 'Current Plan' : plan.button}
                 </Button>

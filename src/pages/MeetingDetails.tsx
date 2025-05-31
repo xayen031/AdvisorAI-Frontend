@@ -38,21 +38,39 @@ const MeetingDetails: React.FC = () => {
 
   const scrollableArea = { maxHeight: '400px' }
 
-  const renderValue = (val: any): string => {
+  const renderValue = (val: any, indent = 0): string => {
+    const spacer = ' '.repeat(indent);
+
+    if (val === null || val === undefined) return ''; // null'ları atla
+
+    if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') {
+      return `${spacer}${val}`;
+    }
+
     if (Array.isArray(val)) {
-      // Eğer array of objects ise
-      if (val.length > 0 && typeof val[0] === 'object') {
-        return val.map((item, i) =>
-          Object.entries(item).map(([k, v]) => `${k}: ${v}`).join(' | ')
-        ).join(' • ')
-      }
-      return val.join(', ')
+      const filtered = val
+        .map(item => renderValue(item, indent + 2))
+        .filter(Boolean); // boşları ayıkla
+      if (filtered.length === 0) return '';
+      return filtered.map(item => `${spacer}- ${item.trimStart()}`).join('\n');
     }
-    if (typeof val === 'object' && val !== null) {
-      return Object.entries(val).map(([k, v]) => `${k}: ${v}`).join(' | ')
+
+    if (typeof val === 'object') {
+      const entries = Object.entries(val)
+        .map(([k, v]) => {
+          const rendered = renderValue(v, indent + 2);
+          if (!rendered) return '';
+          return `${spacer}${k}: ${rendered}`;
+        })
+        .filter(Boolean);
+
+      if (entries.length === 0) return '';
+      return entries.join('\n');
     }
-    return String(val ?? '')
-}
+
+    return '';
+  };
+
   const fetchMeetingData = async () => {
     if (!meetingId) return
     setLoading(true)
@@ -155,11 +173,26 @@ const MeetingDetails: React.FC = () => {
     setAppendingField(key as string);
 
     try {
-      // 🔍 Contact'ı session_id üzerinden bul (id değil!)
+      // 🔍 Önce meeting içinden client_id'yi bul
+      const { data: meeting, error: meetingError } = await supabase
+        .from('meetings')
+        .select('client_id')
+        .eq('session_id', meetingId)
+        .single();
+
+      if (meetingError || !meeting) {
+        console.error('Meeting not found:', meetingError);
+        alert('Meeting not found for this session.');
+        return;
+      }
+
+      const clientId = meeting.client_id;
+
+      // 🔍 Ardından contact'ı id (client_id) ile bul
       const { data: existingContact, error: fetchError } = await supabase
         .from('contacts')
         .select('*')
-        .eq('session_id', meetingId)  // ID yerine session_id ile eşleştiriyoruz
+        .eq('id', clientId)
         .single();
 
       if (fetchError || !existingContact) {
@@ -168,6 +201,7 @@ const MeetingDetails: React.FC = () => {
         return;
       }
 
+      // 🔄 Güncellenecek veri
       const updateData: any = {};
       const nestedKeys: Array<keyof Contact> = [
         'personalDetails',
@@ -193,18 +227,18 @@ const MeetingDetails: React.FC = () => {
           String(value ?? '');
       }
 
-      // 📝 Güncelleme
+      // 📝 Güncelleme işlemi
       const { error: updateError } = await supabase
         .from('contacts')
         .update(updateData)
-        .eq('session_id', meetingId); // Yine session_id üzerinden güncelliyoruz
+        .eq('id', clientId); // artık id ile eşleştiriyoruz
 
       if (updateError) {
         console.error('Append error:', updateError);
         alert(`Error updating ${key}`);
       } else {
         alert(`Successfully updated ${key}`);
-        fetchMeetingData(); // Yeniden veriyi çek
+        fetchMeetingData(); // veriyi yeniden çek
       }
     } catch (err) {
       console.error('Error in handleAppend:', err);
@@ -309,29 +343,38 @@ const MeetingDetails: React.FC = () => {
           </CardHeader>
           <CardContent className="p-3 space-y-4">
             {extractedInfo ? (
-              Object.entries(extractedInfo).map(([key, val]) => (
-                <div
-                  key={key}
-                  className="flex flex-col sm:flex-row sm:items-start sm:space-x-4 p-3 rounded-md border bg-white dark:bg-indigo-900/30"
-                >
-                  <div className="w-32 font-semibold text-gray-700 dark:text-gray-200 capitalize">
-                    {key.replace(/([A-Z])/g, ' $1')}
-                  </div>
-                  <div className="flex-1 space-y-1 text-sm text-gray-800 dark:text-gray-100">
-                    <pre className="whitespace-pre-wrap break-words font-mono bg-gray-100 dark:bg-indigo-800 p-2 rounded">
-                      {renderValue(val)}
-                    </pre>
-                  </div>
-                  <Button
-                    size="sm"
-                    className="mt-2 sm:mt-0"
-                    disabled={appendingField === key}
-                    onClick={() => handleAppend(key as keyof Contact, val)}
+              Object.entries(extractedInfo)
+                .filter(([, val]) => {
+                  if (val === null || val === undefined) return false;
+                  if (typeof val === 'object') {
+                    // boş obje veya boş array filtrele
+                    return Array.isArray(val) ? val.length > 0 : Object.keys(val).length > 0;
+                  }
+                  return true; // string, number, vs göster
+                })
+                .map(([key, val]) => (
+                  <div
+                    key={key}
+                    className="flex flex-col sm:flex-row sm:items-start sm:space-x-4 p-3 rounded-md border bg-white dark:bg-indigo-900/30"
                   >
-                    {appendingField === key ? 'Appending…' : 'Append'}
-                  </Button>
-                </div>
-              ))
+                    <div className="w-32 font-semibold text-gray-700 dark:text-gray-200 capitalize">
+                      {key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}
+                    </div>
+                    <div className="flex-1 space-y-1 text-sm text-gray-800 dark:text-gray-100">
+                      <pre className="whitespace-pre-wrap break-words font-mono bg-gray-100 dark:bg-indigo-800 p-2 rounded">
+                        {renderValue(val)}
+                      </pre>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="mt-2 sm:mt-0"
+                      disabled={appendingField === key}
+                      onClick={() => handleAppend(key as keyof Contact, val)}
+                    >
+                      {appendingField === key ? 'Appending…' : 'Append'}
+                    </Button>
+                  </div>
+                ))
             ) : (
               <p className="text-sm text-gray-500 italic">No extracted contact info available.</p>
             )}
