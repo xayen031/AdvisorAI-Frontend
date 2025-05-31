@@ -151,20 +151,68 @@ const MeetingDetails: React.FC = () => {
   }, [meetingId])
 
   const handleAppend = async (key: keyof Contact, value: any) => {
-    if (!meetingId) return
-    setAppendingField(key as string)
+    if (!meetingId) return;
+    setAppendingField(key as string);
+
     try {
-      const patch = { [key]: Array.isArray(value) ? value.join(', ') : String(value ?? '') }
-      const { error } = await supabase
+      // 🔍 Contact'ı session_id üzerinden bul (id değil!)
+      const { data: existingContact, error: fetchError } = await supabase
         .from('contacts')
-        .update(patch)
-        .eq('id', meetingId) // Adjust if not using meetingId as contact ID
-      if (error) console.error('Append error:', error)
-      else alert(`Appended ${key}`)
+        .select('*')
+        .eq('session_id', meetingId)  // ID yerine session_id ile eşleştiriyoruz
+        .single();
+
+      if (fetchError || !existingContact) {
+        console.error('Contact not found:', fetchError);
+        alert('Contact not found for this meeting.');
+        return;
+      }
+
+      const updateData: any = {};
+      const nestedKeys: Array<keyof Contact> = [
+        'personalDetails',
+        'compliance',
+        'financials',
+        'family',
+        'riskProfile',
+        'letterOfAuthority',
+      ];
+
+      if (nestedKeys.includes(key)) {
+        updateData[key] = {
+          ...(existingContact[key] || {}),
+          ...(typeof value === 'object' ? value : {}),
+        };
+      } else if (key === 'tags' && Array.isArray(value)) {
+        const existingTags = existingContact.tags || [];
+        updateData.tags = [...new Set([...existingTags, ...value])];
+      } else {
+        updateData[key] =
+          typeof value === 'object' ? JSON.stringify(value) :
+          Array.isArray(value) ? value.join(', ') :
+          String(value ?? '');
+      }
+
+      // 📝 Güncelleme
+      const { error: updateError } = await supabase
+        .from('contacts')
+        .update(updateData)
+        .eq('session_id', meetingId); // Yine session_id üzerinden güncelliyoruz
+
+      if (updateError) {
+        console.error('Append error:', updateError);
+        alert(`Error updating ${key}`);
+      } else {
+        alert(`Successfully updated ${key}`);
+        fetchMeetingData(); // Yeniden veriyi çek
+      }
+    } catch (err) {
+      console.error('Error in handleAppend:', err);
+      alert('An error occurred while updating');
     } finally {
-      setAppendingField(null)
+      setAppendingField(null);
     }
-  }
+  };
 
   if (loading) {
     return (

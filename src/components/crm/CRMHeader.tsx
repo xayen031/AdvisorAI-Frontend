@@ -1,5 +1,5 @@
 // src/components/crm/CRMHeader.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Home, 
@@ -37,7 +37,27 @@ const CRMHeader = ({ activePage }: { activePage?: string }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const currentPath = location.pathname;
+  const [userPlan, setUserPlan] = useState('NONE');
   
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error("Auth Error:", error);
+        return;
+      }
+
+      const plan = user?.user_metadata?.plan;
+      if (plan) {
+        setUserPlan(plan.toUpperCase());
+      } else {
+        console.warn("No plan found in user metadata.");
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -61,9 +81,12 @@ const CRMHeader = ({ activePage }: { activePage?: string }) => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <Link to="/" className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center">
+            <Link to="/crm" className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center">
               <span className="mr-2">AdvisorAI</span>
               <span className="text-sm px-2 py-1 bg-indigo-100 dark:bg-indigo-800 text-indigo-600 dark:text-indigo-300 rounded-md">CRM</span>
+              <span className="text-sm px-2 py-1 ml-2 bg-emerald-500 text-white rounded-md">
+                {userPlan}
+              </span>
             </Link>
           </div>
           
