@@ -1,159 +1,157 @@
-import React, { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabaseClient';
-import CRMHeader from '@/components/crm/CRMHeader';
-import { ArrowLeft } from 'lucide-react';
+// src/pages/Plans.tsx
+import React, { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabaseClient";
+import { loadStripe } from "@stripe/stripe-js";
 
-const plans = [
+interface Plan {
+  name: string;
+  price: string;         // Display only
+  value: string;         // e.g. "basic", "pro", "enterprise"
+  features: string[];
+  stripePriceId: string; // Must match the Price ID you set up in Stripe Dashboard
+}
+
+const PLANS: Plan[] = [
   {
-    name: 'Basic',
-    price: '$75/month',
-    value: 'basic',
+    name: "Basic",
+    price: "$75/month",
+    value: "basic",
+    stripePriceId: "price_1JHXXXXXbBbXXXXXa", // ← REPLACE with your actual price ID
     features: [
-      'AI generated meeting summary',
-      'Automated AI meeting admin',
-      'Monthly report generation',
-      'Email support',
-      '✘ Realtime AI assistant',
-      '✘ Custom integrations',
-      '✘ Advanced Analytics',
+      "AI-generated meeting summary",
+      "Automated AI meeting admin",
+      "Monthly report generation"
     ],
-    button: 'Get Started',
-    recommended: false,
-    enterprise: false,
   },
   {
-    name: 'Professional',
-    price: '$100/month',
-    value: 'pro',
+    name: "Pro",
+    price: "$150/month",
+    value: "pro",
+    stripePriceId: "price_1JHYYYYYbBbYYYYYb", // ← REPLACE
     features: [
-      'AI generated meeting summary',
-      'Automated AI meeting admin',
-      'Monthly report generation',
-      'Email support',
-      'Realtime AI assistant',
-      'Custom integrations',
-      'Advanced Analytics',
+      "Everything in Basic",
+      "Unlimited meetings",
+      "Priority support"
     ],
-    button: 'Get Started',
-    recommended: true,
-    enterprise: false,
   },
   {
-    name: 'Enterprise',
-    price: 'Custom',
-    value: 'enterprise',
+    name: "Enterprise",
+    price: "$500/month",
+    value: "enterprise",
+    stripePriceId: "price_1JHZZZZZbBbZZZZZd", // ← REPLACE
     features: [
+      "Everything in Pro",
+      "Dedicated account manager",
+      "Custom integrations"
     ],
-    button: 'Get in touch',
-    recommended: false,
-    enterprise: true,
   },
 ];
 
 const Plans: React.FC = () => {
+  const [userPlan, setUserPlan] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
-  const [currentPlan, setCurrentPlan] = useState<string | null>(null);
 
+  // On mount, fetch current plan for this user
   useEffect(() => {
-    const fetchUserPlan = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.user_metadata?.plan) {
-        setCurrentPlan(user.user_metadata.plan);
-      }
-    };
+    async function fetchPlan() {
+      const {
+        data: { user },
+        error: userError
+      } = await supabase.auth.getUser();
 
-    fetchUserPlan();
+      if (userError || !user) {
+        console.error("No logged-in user or error:", userError);
+        setUserPlan(null);
+        setLoading(false);
+        return;
+      }
+
+      // You might store plan under "user_metadata.plan", or in a "profiles" table.
+      // In this example, let's assume it's in user.user_metadata.plan
+      const plan = (user.user_metadata as any)?.plan || null;
+      setUserPlan(plan);
+      setLoading(false);
+    }
+    fetchPlan();
   }, []);
 
-  const handleChoose = async (plan: string) => {
-    if (plan === currentPlan) return;
+  const handleChoosePlan = async (planValue: string, priceId: string) => {
+    if (planValue === userPlan) {
+      return; // Already on this plan—no action.
+    }
 
-    if (plan === 'basic') {
-      await supabase.auth.updateUser({ data: { plan: 'basic' } });
-      navigate('/crm/settings');
+    setLoading(true);
+
+    // 1) Call your Edge Function to create a Checkout Session
+    const sessionRes = await fetch(
+      "https://<YOUR_EDGE_DOMAIN>/create-checkout",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // If your Edge Function checks supabase JWT:
+          Authorization: `Bearer ${supabase.auth.session()?.access_token}`,
+        },
+        body: JSON.stringify({
+          priceId: priceId,
+          plan: planValue,
+        }),
+      }
+    );
+
+    if (!sessionRes.ok) {
+      console.error("Failed to create checkout session", await sessionRes.text());
+      setLoading(false);
       return;
     }
 
-    if (plan === 'enterprise') {
-      // redirect to contact page or open email
-      window.location.href = 'mailto:support@advisorai.io?subject=Enterprise Plan Inquiry';
+    const { sessionId } = await sessionRes.json();
+
+    // 2) Redirect to Stripe Checkout
+    const stripe = await loadStripe("<YOUR_PUBLISHABLE_KEY>");
+    if (!stripe) {
+      console.error("stripe.js failed to load.");
+      setLoading(false);
       return;
     }
-
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data: { session } } = await supabase.auth.getSession();
-
-    const res = await fetch('https://mylukrhthpvxhzadrfqe.supabase.co/functions/v1/create-checkout', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.access_token}`,
-      },
-      body: JSON.stringify({
-        plan,
-        user_id: user?.id,
-        email: user?.email,
-      }),
-    });
-
-    const { url, error } = await res.json();
-    if (res.ok && url) {
-      window.location.href = url;
-    } else {
-      alert(error || 'Failed to create checkout session');
-    }
+    stripe.redirectToCheckout({ sessionId });
   };
 
+  if (loading) {
+    return <div>Loading …</div>;
+  }
+
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
-      <CRMHeader />
-      <div className="relative z-20 px-4 mt-4">
-        <button
-          onClick={() => navigate('/crm/settings')}
-          className="flex items-center text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 transition"
-        >
-          <ArrowLeft className="w-5 h-5 mr-1" />
-          Back to Settings
-        </button>
-      </div>
-      <div className="max-w-6xl mx-auto px-4 py-16">
-        <h1 className="text-4xl font-bold text-center mb-4">Choose Your Plan</h1>
-        <p className="text-center text-gray-600 dark:text-gray-300 mb-12">
-          Select a plan that fits your needs and scale as you grow.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {plans.map(plan => {
-            const isCurrent = plan.value === currentPlan;
-            return (
-              <div
-                key={plan.name}
-                className={`rounded-2xl p-8 shadow-md flex flex-col justify-between text-center border ${
-                  plan.recommended ? 'border-blue-600 ring-2 ring-blue-600' : 'border-gray-200 dark:border-gray-700'
-                } bg-white dark:bg-gray-800`}
+    <div className="min-h-screen bg-gray-100">
+      <h1 className="text-3xl font-bold text-center my-8">Choose a Plan</h1>
+      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 px-4">
+        {PLANS.map((plan) => {
+          const isCurrent = plan.value === userPlan;
+          return (
+            <div
+              key={plan.value}
+              className="bg-white rounded-xl shadow p-6 flex flex-col"
+            >
+              <h2 className="text-2xl font-semibold mb-2">{plan.name}</h2>
+              <p className="text-xl font-bold mb-4">{plan.price}</p>
+              <ul className="flex-1 mb-6 list-disc pl-5 space-y-1">
+                {plan.features.map((feat) => (
+                  <li key={feat}>{feat}</li>
+                ))}
+              </ul>
+              <Button
+                disabled={isCurrent}
+                onClick={() => handleChoosePlan(plan.value, plan.stripePriceId)}
+                className="w-full mt-auto"
               >
-                <div>
-                  <h2 className="text-2xl font-semibold mb-2">{plan.name}</h2>
-                  <p className="text-xl font-bold mb-4">{plan.price}</p>
-                  <ul className="mb-6 space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                    {plan.features.map((feature, i) => (
-                      <li key={i}>{feature}</li>
-                    ))}
-                  </ul>
-                </div>
-                <Button
-                  onClick={() => handleChoose(plan.value)}
-                  disabled={isCurrent}
-                  variant={isCurrent ? 'outline' : 'default'}
-                  className="w-full mt-auto"
-                >
-                  {isCurrent ? 'Current Plan' : plan.button}
-                </Button>
-              </div>
-            );
-          })}
-        </div>
+                {isCurrent ? "Current Plan" : `Choose ${plan.name}`}
+              </Button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
