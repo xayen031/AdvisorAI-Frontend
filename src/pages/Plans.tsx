@@ -70,12 +70,6 @@ const Plans: React.FC = () => {
   const handleChoose = async (plan: string) => {
     if (plan === currentPlan) return;
 
-    if (plan === 'basic') {
-      await supabase.auth.updateUser({ data: { plan: 'basic' } });
-      navigate('/crm/settings');
-      return;
-    }
-
     if (plan === 'enterprise') {
       // redirect to contact page or open email
       window.location.href = 'mailto:support@advisorai.io?subject=Enterprise Plan Inquiry';
