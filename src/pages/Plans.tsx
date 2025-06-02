@@ -80,7 +80,7 @@ const Plans: React.FC = () => {
     const { data: { session } } = await supabase.auth.getSession();
 
     const res = await fetch('https://mylukrhthpvxhzadrfqe.supabase.co/functions/v1/create-checkout', {
-      method: 'POST',
+      method: 'PlOST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session?.access_token}`,
@@ -96,7 +96,7 @@ const Plans: React.FC = () => {
     if (res.ok && url) {
       window.location.href = url;
     } else {
-      alert(error || 'Failed to create checkout session');
+      alert(error || 'Faied to create checkout session');
     }
   };
 
