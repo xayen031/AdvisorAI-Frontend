@@ -8,7 +8,7 @@ import {
 import { loadStripe } from '@stripe/stripe-js'
 import React, { useEffect, useState } from 'react'
 
-const stripePromise = loadStripe('pk_test_...') // 🔁 Buraya kendi Stripe public key'ini gir
+const stripePromise = loadStripe('pk_live_51RU8RZP1BcK15YIHlY6iPMxujJbuxRZmYf2NuOy7dsRBaM9n0KXXm1hJKGOyjfnQ4EFBVJfa1hlllluxnVC3ZG8r00PMPreaUq') // 🔁 Buraya kendi Stripe public key'ini gir
 
 const CheckoutForm = ({
   amount,
