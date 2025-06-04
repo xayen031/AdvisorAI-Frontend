@@ -35,7 +35,7 @@ const CheckoutForm = ({
       data: { session },
     } = await supabase.auth.getSession()
 
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_EDGE_URL}/create-payment-intent`, {
+    const res = await fetch(`https://mylukrhthpvxhzadrfqe.supabase.co/functions/v1/create-payment-intent`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
