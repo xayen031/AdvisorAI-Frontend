@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrainCircuit } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
+import logo from '@/assets/logo.png'; // Adjust the path as necessary
 const HeroSection: React.FC = () => {
   return (
     <section
@@ -36,8 +36,12 @@ const HeroSection: React.FC = () => {
 
         {/* Visual Area */}
         <div className="w-full md:w-1/2 flex justify-center mt-8 md:mt-0">
-          <div className="bg-white dark:bg-gray-700 p-8 rounded-full shadow-2xl">
-            <BrainCircuit size={250} className="text-blue-600 opacity-90" strokeWidth={1.5} />
+          <div className="bg-white dark:bg-gray-700 p-6 rounded-full shadow-2xl">
+            <img
+              src="/images/logo.jpeg"
+              alt="Team member"
+              className="w-64 h-64 rounded-full object-cover"
+            />
           </div>
         </div>
       </div>
