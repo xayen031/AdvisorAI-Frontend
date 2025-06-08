@@ -84,7 +84,30 @@ const Plans: React.FC = () => {
     setShowPayment(true)
   }
 
+<<<<<<< HEAD
   const selected = plans.find(p => p.value === selectedPlan)
+=======
+    const res = await fetch('https://mylukrhthpvxhzadrfqe.supabase.co/functions/v1/create-checkout', {
+      method: 'PlOST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token}`,
+      },
+      body: JSON.stringify({
+        plan,
+        user_id: user?.id,
+        email: user?.email,
+      }),
+    });
+
+    const { url, error } = await res.json();
+    if (res.ok && url) {
+      window.location.href = url;
+    } else {
+      alert(error || 'Faied to create checkout session');
+    }
+  };
+>>>>>>> parent of f459aa9 (minor bug fixes)
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
