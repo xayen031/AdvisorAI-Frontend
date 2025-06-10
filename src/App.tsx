@@ -1,4 +1,11 @@
 // App.tsx
+// Declare fbq on the Window interface for TypeScript
+declare global {
+  interface Window {
+    fbq?: (...args: any[]) => void;
+  }
+}
+
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -32,11 +39,11 @@ const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
-    if (window.fbq) {
-      window.fbq('track', 'PageView');
-    }
-  }, []);
-  
+  if (typeof window.fbq === 'function') {
+    window.fbq('track', 'PageView');
+  }
+}, []);
+
   useEffect(() => {
     const syncToken = async () => {
       const { data } = await supabase.auth.getSession();
