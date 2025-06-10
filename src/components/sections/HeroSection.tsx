@@ -35,15 +35,7 @@ const HeroSection: React.FC = () => {
         </div>
 
         {/* Visual Area */}
-        <div className="w-full md:w-1/2 flex justify-center mt-8 md:mt-0">
-          <div className="bg-white dark:bg-gray-700 p-6 rounded-full shadow-2xl">
-            <img
-              src="/images/logo.jpeg"
-              alt="Team member"
-              className="w-64 h-64 rounded-full object-cover"
-            />
-          </div>
-        </div>
+        
       </div>
 
       {/* Scroll Down Indicator */}
