@@ -32,6 +32,12 @@ const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
+    if (window.fbq) {
+      window.fbq('track', 'PageView');
+    }
+  }, []);
+  
+  useEffect(() => {
     const syncToken = async () => {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
