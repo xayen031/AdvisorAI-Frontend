@@ -26,6 +26,7 @@ import MeetingDetails from "./pages/MeetingDetails";
 import PlanChangeSuccess from "./pages/PlanChangeSuccess";
 import MeetingsPage from "./pages/Meetings";
 import AdvisorLM from "./pages/AdvisorLM";
+import SignUpSuccess from './pages/SignUpSuccess';
 import { supabase } from "./lib/supabaseClient";
 
 const queryClient = new QueryClient();
@@ -69,7 +70,7 @@ const App = () => {
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/meeting-details" element={<MeetingDetails />} />
-            
+            <Route path="/signup-success" element={<SignUpSuccess />} />
             <Route
               path="/crm/contacts"
               element={
