@@ -129,18 +129,6 @@ const Plans: React.FC = () => {
         <p className="text-center text-gray-600 dark:text-gray-300 mb-6">
           Select a plan that fits your needs and scale as you grow.
         </p>
-
-        {/* Coupon Input */}
-        <div className="flex justify-center mb-12">
-          <input
-            type="text"
-            placeholder="Have a coupon code? Enter it here"
-            value={couponCode}
-            onChange={(e) => setCouponCode(e.target.value)}
-            className="border p-2 rounded w-full max-w-xs"
-          />
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {plans.map((planItem) => {
             const isCurrent = planItem.value === currentPlan;
