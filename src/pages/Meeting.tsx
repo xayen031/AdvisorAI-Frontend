@@ -3,8 +3,10 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Lock , Send } from 'lucide-react'
+import { Lock, Send } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
+// --- EKLENDİ: Yeni oluşturduğumuz uyarı component'ini import ediyoruz ---
+import { TranscriptionWarning } from '@/components/crm/TranscriptionWarning'
 
 
 interface TranscriptItem {
@@ -48,6 +50,9 @@ export const MeetingPage: React.FC = () => {
   const [transcripts, setTranscripts]   = useState<TranscriptItem[]>([])
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([])
   const [aiPrompt, setAiPrompt]         = useState('')
+
+  // --- EKLENDİ: Uyarı penceresinin görünürlüğünü kontrol etmek için state ---
+  const [isWarningVisible, setWarningVisible] = useState(false)
 
   const transcriptEl = useRef<HTMLDivElement|null>(null)
   const aiEl         = useRef<HTMLDivElement|null>(null)
@@ -280,9 +285,6 @@ const endMeeting = async () => {
   }
 }
 
-
-
-
   const sendToAI = (text: string) => {
     const wsUrl = userPlan === 'basic'
       ? '/speaker'  // AI yok
@@ -318,8 +320,26 @@ const endMeeting = async () => {
   const goToDetails = () =>
     navigate('/meeting-details', { state: { meetingId, advisorName, customerName } })
 
+  // --- EKLENDİ: Uyarı penceresinden gelen olayları yönetecek fonksiyonlar ---
+  const handleConfirmStart = () => {
+    setWarningVisible(false) // Pencereyi kapat
+    startMeeting()           // Toplantıyı başlat
+  }
+
+  const handleCancelStart = () => {
+    setWarningVisible(false) // Pencereyi kapat
+  }
+
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-indigo-950 flex flex-col">
+      {/* --- EKLENDİ: Uyarı component'ini sayfaya ekliyoruz --- */}
+      <TranscriptionWarning
+        isOpen={isWarningVisible}
+        onConfirm={handleConfirmStart}
+        onCancel={handleCancelStart}
+      />
+
       {/* Header */}
       <div className="container mx-auto px-4 py-4">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
@@ -470,7 +490,9 @@ const endMeeting = async () => {
       <div className="container mx-auto px-4 py-4 border-t flex justify-end">
         <Button
           onClick={() => {
-            if (!streaming && !meetingEnded) startMeeting()
+            // --- DEĞİŞTİRİLDİ: startMeeting() doğrudan çağrılmıyor. ---
+            // Önce uyarı penceresini göstermek için state'i güncelliyoruz.
+            if (!streaming && !meetingEnded) setWarningVisible(true)
             else if (streaming && !meetingEnded) endMeeting()
             else if (meetingEnded) goToDetails()
           }}
